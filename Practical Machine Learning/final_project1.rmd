@@ -1,0 +1,181 @@
+---
+title: "Practical Machine Learning Course Project"
+author: "Nikhil Chandra"
+date: "September 22, 2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+ 
+
+#Background and requirement of the project
+
+
+The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. You may use any of the other variables to predict with. You should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. You will also use your prediction model to predict 20 different test cases.
+
+#Download Data and Project Design
+
+We first download the data from the given URLs.
+
+```{r,message=FALSE,warning=FALSE}
+url_train<- 'https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv'
+url_test <- 'https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv'
+download.file(url=url_train, destfile='training.csv')
+download.file(url=url_test,  destfile ='test.csv'  )
+train<- read.csv('training.csv',na.strings = c('NA',''))
+test <- read.csv('test.csv',na.strings = c('NA',''))
+```
+
+The overall question is a classification problem. Therefore, after data preprocessing, the key remaining question will be the model selection. I plan to fit the data into three classic models,
+namely the classification tree, the random forest and the gradiant boosting model. Then I plan to stack three models together to see whether a combined model can improve the performance of the predictive analytic. We load the required packages below.
+
+```{r,message=FALSE, warning=FALSE}
+library(gbm)
+library(randomForest)
+library(ggplot2)
+library(rpart.plot)
+library(rpart)
+library(rattle)
+library(caret)
+library(e1071)
+library(xgboost)
+```
+
+#Data Preprocessing
+
+We first split the training data into two parts with the ratio of 7/3. Before that, we need to transform the response variable into factor.
+
+```{r,message=FALSE,warning=FALSE}
+train$classe<-as.factor(train$classe)
+set.seed(32423)
+intrain<- createDataPartition(train$classe,p=0.7,list = FALSE)
+training<- train[intrain,]
+testing <- train[-intrain,]
+```
+
+Before fitting the models, we need to perform data cleansing process. The response variable of the data is 'classe', which represent ways of the barbell lift movement. The first step one need to do is to delete the unnecessary variables in the dataset. It is known that the id column is useless in terms of model training. Therefore, we drop it directly.
+
+```{r}
+training<- training[,-1]
+testing <- testing [,-1]
+test<- test[,-1]
+```
+
+For the classification problem, the feature engineering is always not as complicated as the regression problem. But we still need to check whether there is a variable without variability existing in the dataset. 
+
+```{r,message=FALSE,warning=FALSE}
+zeroVar <- nearZeroVar(training, saveMetrics=TRUE)
+nzv_columns<- row.names(zeroVar[which(zeroVar$nzv==T),])
+zerovar<-c()
+for(i in 1:length(nzv_columns)){
+  zerovar<-append(zerovar,nzv_columns[i])
+}
+training<- training[,-which(colnames(training)%in%zerovar)]
+```
+
+Also, due to the fact that the integrity of the dataset is poor, we have to clean the variables that have too many 'NA' values. We create a benchmark indicating that if the percentage of 'NA' values reaches to 80%, then we drop the corresponding variables off.
+
+```{r,message=FALSE,warning=FALSE}
+Drop_Index<- c()
+Benchmark<-0.8
+Num_NA<-sapply(training,function(y)length(which(is.na(y)==T)))
+NA_Percentage<- Num_NA/nrow(training)
+for(i in 1:length(NA_Percentage)){
+  if(NA_Percentage[i]>=Benchmark){
+    Drop_Index<-append(i,Drop_Index)
+  }
+}
+training <- training[,-Drop_Index]
+```
+
+The data cleansing process is finished at this step. We perform the same process on the testing set and final test set.
+
+```{r,message=FALSE,warning=FALSE}
+Indexes<- match(colnames(training),colnames(testing))
+testing<- testing[,Indexes]
+Ind_2<- match(colnames(training[,-58]),colnames(test))
+test<- test[,Ind_2]
+```
+
+
+#Model Fitting and Evaluation
+
+**A: Classification Tree**
+
+First model I fit is classification tree model.
+
+```{r,message=FALSE,warning=FALSE,fig.width=15, fig.height=20}
+treeFit<- rpart(classe~.,data=training,method = 'class')
+print(treeFit)
+fancyRpartPlot(treeFit)
+Prediction1<- predict(treeFit,newdata=testing,type = 'class')
+TreeAcu<-confusionMatrix(Prediction1,testing$classe)$overall[1]
+TreeAcu
+```
+
+The accuracy of tree model is good, but not quite perfect. We can still see the potential improvement on the prediction.
+
+**B: Naive Bayes**
+
+Secondly, we choose to build a Naive Bayes classifier.
+
+```{r,message=FALSE,warning=FALSE}
+NBFit<- naiveBayes(classe~.,data=training)
+Prediction3<- predict(NBFit,newdata = testing,type = 'class')
+NBAccu<- confusionMatrix(Prediction3,testing$classe)$overall[1]
+NBAccu
+```
+
+The naive bayesian model is quite basic and cannot produce a satisfied result.
+
+**C: Random Forest**
+
+The third model I choose to fit is a random forest model.
+
+```{r,message=FALSE,warning=FALSE}
+set.seed(32423)
+rfFit<- randomForest(classe~.,data= training)
+print(rfFit)
+Prediction2<- predict(rfFit,newdata = testing[,-58])
+rfAccu<- confusionMatrix(Prediction2,testing$classe)$overall[1]
+rfAccu
+```
+
+The accuracy of the random forest model is amazingly high. However, I am also interested in the performance of the boosting model.
+
+**D:Support Vector Machine**
+
+The fourth model I choose to fit is a logistic regression model. 
+
+```{r,message=FALSE,warning=FALSE}
+set.seed(32423)
+svmFit<- svm(classe~.,data = training)
+Prediction4<- predict(svmFit,newdata= testing,type='class')
+svmAccu <- confusionMatrix(Prediction4,testing$classe)$overall[1]
+svmAccu
+```
+
+The accuracy for this method is also good.
+
+#Concluding Remark
+
+After trying four different classifiers, I have decided to use random forest as the model that can fit the data best. The accuracies of five models are plotted below.
+
+```{r,message=FALSE,warning=FALSE}
+Accuracy<- data.frame(Models=c('ClassificationTree','Naive Bayes','Random Forest','Support Vector Machine'), Accuracy= c(TreeAcu,NBAccu,rfAccu,svmAccu))
+g<- ggplot(Accuracy,aes(x = Models,y=Accuracy))+geom_bar(stat='identity')+theme_bw()+ggtitle('Comparison of Accuracy')
+g
+```
+
+The final prediction for the 'real test set' is presented below.
+
+```{r,message=FALSE,warning=FALSE}
+common <- intersect(names(training), names(test)) 
+for (p in common) { 
+  if (class(training[[p]]) == "factor") { 
+    levels(test[[p]]) <- levels(training[[p]]) 
+  } 
+}
+Final_Pred<- predict(rfFit,test)
+Final_Pred
+```
