@@ -14,6 +14,31 @@ knitr::opts_chunk$set(echo = FALSE)
 * This pitch and the shiny application was built for the "Developing Data Products" assignment.
 * This application can calculate BMI once you enter weight and Height.
 
+## Overview of Application
+
+* This application can calculate BMI once you enter weight and Height.
+You need to enter weight in Kg
+
+* Enter Height in meters.
+
+* Enter the date 
+
+* Click Submit.
+
+## Result of Application
+
+* After providing the above input, the application will diplay the below result.
+
+* Height
+
+* Weight
+
+* Date
+
+* BMI
+
+
+
 <br /><br />
 
 * The developed shiny app for this assignment is avalilable in this presentation and at: https://nikhilchandra.shinyapps.io/ShiinyApplication-BMI/
