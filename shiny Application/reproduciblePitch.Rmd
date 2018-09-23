@@ -1,0 +1,37 @@
+---
+title: " Shiny Application and Reproducible Pitch"
+author: "Nikhil Chandra"
+date: "September 23 2018"
+output: slidy_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Overview
+
+* This pitch and the shiny application was built for the "Developing Data Products" assignment.
+* This application can calculate BMI once you enter weight and Height.
+
+<br /><br />
+
+* The developed shiny app for this assignment is avalilable in this presentation and at: https://nikhilchandra.shinyapps.io/ShiinyApplication-BMI/
+
+<br /><br />
+
+* The source codes of ui.R and server.R and also the presentation are available on the GitHub repo: 
+https://github.com/nikhil-chandra/datasciencecoursera/tree/master/shiny%20Application
+
+
+
+
+
+## Shiny App: Example
+
+```{r}
+knitr::include_app("
+https://nikhilchandra.shinyapps.io/ShiinyApplication-BMI/", height = "450px")
+```
+The developed shiny app for this assignment is also avalilable at: 
+https://nikhilchandra.shinyapps.io/ShiinyApplication-BMI/
