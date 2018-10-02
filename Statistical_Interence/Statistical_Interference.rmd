@@ -1,0 +1,136 @@
+---
+title: "Statistical Inference - Peer Grading"
+author: "Nikhil Chandra"
+date: "October 2, 2018"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+## Effectiveness of Vitamin C on Tooth Growth in Guinea Pigs
+
+## Overview
+In this project, we are going to analyze the ToothGrowth data in the dataset .
+
+        1. We are going to load the ToothGrowth data and do some basic exploratory data analysis.
+        2. Then we will provide a summary for the data.
+        3. Usage of hypothesis or confidence intervals tests to compare tooth growth by supplement and dose. 
+        4. Provide assumptions and the Conclusion.
+
+
+
+```{r}
+        library(dplyr)
+        library(ggplot2)
+        library(datasets)
+        library(gridExtra)
+        library(GGally)
+```
+
+## 1. Load the ToothGrowth data - Perform basic Analysis.
+
+### Load dataset - ToothGrowth
+```{r}
+        data(ToothGrowth)
+        # to keep  naming format with lowercase 1st letter and uppercase subsequent letters.
+        toothGrowth <- ToothGrowth
+        # convert to factor for plotting
+        toothGrowth$dose <- as.factor(toothGrowth$dose)
+```
+
+### Some Exploratory Analysis.
+```{r}
+        str(toothGrowth)
+        head(toothGrowth)
+        tail(toothGrowth)
+        summary(toothGrowth)
+```
+
+### Number of Rows and Columns.
+```{r}
+        dim(toothGrowth)
+```
+
+### Sample Size n
+```{r}
+        sample_size <- length(toothGrowth$len)
+        sample_size
+```
+
+### Mean group by dose 
+```{r}
+        ## X bar - Mean
+        mean_groups <- aggregate(toothGrowth$len,list(toothGrowth$supp,toothGrowth$dose),mean)
+        mean_groups
+```
+
+### Standard Deviation - group by dose 
+```{r}
+        ## s - standard Deviation
+        sd_group <- aggregate(toothGrowth$len,list(toothGrowth$supp,toothGrowth$dose),sd)
+        sd_group
+```
+
+# 2. Summary of the data.
+
+```{r}
+        summary(toothGrowth)
+```
+
+### Table
+```{r}
+        table(toothGrowth$supp, toothGrowth$dose)
+```
+
+### Plots
+```{r echo=FALSE}
+p1 <- ggplot(data=toothGrowth, aes(x=dose,y=len,fill=dose)) +
+  geom_boxplot() + 
+  theme(legend.position="none") + 
+  facet_grid(.~supp) 
+
+p2 <- ggplot(data=toothGrowth, aes(x=supp,y=len,fill=supp)) +
+  geom_boxplot() + 
+  theme(legend.position="none") + 
+  facet_grid(.~dose) 
+
+p3 <- ggplot(data=toothGrowth, aes(x=supp,y=len,fill=supp)) +
+  geom_boxplot()
+
+p4 <- ggplot(data=toothGrowth, aes(x=dose,y=len,fill=dose)) +
+  geom_boxplot()
+
+grid.arrange(p1, p4, p2, p3, ncol = 2, nrow=2, top="Boxplots - ToothGrowth Data by Vit C Dose and Supplement")
+```
+
+# 3. Usage of hypothesis or confidence intervals tests to compare tooth growth by supplement and dose. 
+
+Perform - Analysis of Variance
+```{r}
+anova.out <- aov(len ~ supp * dose, data=toothGrowth)
+summary(anova.out)
+```
+
+The Analysis of Variance results show interaction between the dosage and length. (F(1,54)=15.572;p<0.01). 
+We can alsp see that the supplement type (supp) (F(2,54)=92.000;p<0.01) effects length. 
+We also see some amount of  interaction between the combination of supplement type  and dosage compared to the length  (F(2,54)=4.107;p<0.05).
+
+```{r}
+TukeyHSD(anova.out)
+confint(anova.out)
+print(model.tables(anova.out,"means"),digits=3)
+```
+
+The Analysis of the Tukey HSD  analysis shows some significant differences between each of the groups in supp and dose.
+
+# 4. Assumptions and Conclusion. 
+
+#### With the above data we can  conclude that the data indicates that both the dosage and  supplement have  effects on the length growth of teeth of guinea pig .
+ Supplement type has also shown influence. OJ has a greater average teeth growth with the combination of dosages at 0.5 and 1 than for the VC supplement. 
+But, at dose level 2, there seems to be no major significant effect (similar means and confidence intervals) between the VC supplement and the OJ.
+
+The above conclusions are based on the following assumptions:
+
+a. The distribution of the means is approximately normal.
+b. Dosage and supplement are randomly assigned.
